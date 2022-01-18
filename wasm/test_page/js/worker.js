@@ -52,6 +52,7 @@ onmessage = async function(e) {
       const from = e.data[1];
       const to = e.data[2];
       const input = e.data[3];
+      const htmlOptions = e.data[4]; // may be undefined
       let inputWordCount = 0;
       let inputBlockElements = 0;
       input.forEach(sentence => {
@@ -61,7 +62,7 @@ onmessage = async function(e) {
       let start = Date.now();
       try {
         log(`Blocks to translate: ${inputBlockElements}`);
-        result = translate(from, to, input);
+        result = translate(from, to, input, htmlOptions);
         const secs = (Date.now() - start) / 1000;
         log(`Translation '${from}${to}' Successful. Speed: ${Math.round(inputWordCount / secs)} WPS (${inputWordCount} words in ${secs} secs)`);
       } catch (error) {
@@ -69,6 +70,13 @@ onmessage = async function(e) {
       }
       log(`'${command}' command done, Posting message back to main script`);
       postMessage([`${command}_reply`, result]);
+  } else if (command === 'defaults') {
+    const htmlOptions = new Module.HTMLOptions();
+    postMessage([`${command}_reply`, {
+      'voidTags': htmlOptions.voidTags.toString(),
+      'inlineTags': htmlOptions.inlineTags.toString(),
+      'substituteInlineTagsWithSpaces': htmlOptions.substituteInlineTagsWithSpaces
+    }]);
   }
 }
 
@@ -105,17 +113,17 @@ const constructTranslationModel = async (from, to) => {
 }
 
 // Translates text from source language to target language.
-const translate = (from, to, input) => {
+const translate = (from, to, input, htmlOptions) => {
   // If none of the languages is English then perform translation with
   // English as a pivot language.
   if (from !== 'en' && to !== 'en') {
     log(`Translating '${from}${to}' via pivoting: '${from}en' -> 'en${to}'`);
-    const translatedTextInEnglish = _translateInvolvingEnglish(from, 'en', input);
-    return _translateInvolvingEnglish('en', to, translatedTextInEnglish);
+    const translatedTextInEnglish = _translateInvolvingEnglish(from, 'en', input, htmlOptions);
+    return _translateInvolvingEnglish('en', to, translatedTextInEnglish, htmlOptions);
   }
   else {
     log(`Translating '${from}${to}'`);
-    return _translateInvolvingEnglish(from, to, input);
+    return _translateInvolvingEnglish(from, to, input, htmlOptions);
   }
 }
 
@@ -229,7 +237,7 @@ alignment: soft
   languagePairToTranslationModels.set(languagePair, translationModel);
 }
 
-const _translateInvolvingEnglish = (from, to, input) => {
+const _translateInvolvingEnglish = (from, to, input, htmlOptions) => {
   const languagePair = `${from}${to}`;
   if (!languagePairToTranslationModels.has(languagePair)) {
     throw Error(`Please load translation model '${languagePair}' before translating`);
@@ -237,7 +245,7 @@ const _translateInvolvingEnglish = (from, to, input) => {
   translationModel = languagePairToTranslationModels.get(languagePair);
 
   // Prepare the arguments of translate() API i.e. ResponseOptions and vectorSourceText (i.e. a vector<string>)
-  const responseOptions = _prepareResponseOptions();
+  const responseOptions = _prepareResponseOptions(htmlOptions);
   let vectorSourceText = _prepareSourceText(input);
 
   // Call translate() API; result is vector<Response> where every item of vector<Response> corresponds
@@ -337,8 +345,16 @@ const _parseTranslatedTextSentenceQualityScores = (vectorResponse) => {
   return result;
 }
 
-const _prepareResponseOptions = () => {
-  return {qualityScores: true, alignment: true, html: true};
+const _prepareResponseOptions = (htmlOptions) => {
+  const options = new Module.ResponseOptions();
+  options.qualityScores = true;
+  options.html = true;
+  if (htmlOptions) {
+    if ("inlineTags" in htmlOptions) options.htmlOptions.inlineTags = new Module.StringSet(options.inlineTags);
+    if ("voidTags" in htmlOptions) options.htmlOptions.voidTags = new Module.StringSet(options.voidTags);
+    if ("substituteInlineTagsWithSpaces" in htmlOptions) options.htmlOptions.substituteInlineTagsWithSpaces = options.substituteInlineTagsWithSpaces;
+  }
+  return options;
 }
 
 const _prepareSourceText = (input) => {

@@ -34,7 +34,10 @@ const translateCall = () => {
   $("#output").setAttribute("disabled", true);
   const lngFrom = langFrom.value;
   const lngTo = langTo.value;
-  worker.postMessage(["translate", lngFrom, lngTo, paragraphs]);
+  worker.postMessage(["translate", lngFrom, lngTo, paragraphs, {
+    substituteInlineTagsWithSpaces: document.querySelector("#html-substitute-inline-tags-with-spaces").checked,
+    inlineTags: document.querySelector("#html-inline-tags").value
+  }]);
 };
 
 worker.onmessage = function (e) {
@@ -47,6 +50,10 @@ worker.onmessage = function (e) {
   } else if (e.data[0] === "import_reply" && e.data[1]) {
     modelRegistry = e.data[1];
     init();
+  } else if (e.data[0] === "defaults_reply" && e.data[1]) {
+    const htmlOptions = e.data[1];
+    document.querySelector("#html-inline-tags").value = htmlOptions.inlineTags;
+    document.querySelector("#html-substitute-inline-tags-with-spaces").checked = htmlOptions.substituteInlineTagsWithSpaces;
   }
 };
 
@@ -66,6 +73,10 @@ const loadModel = () => {
     const input = document.querySelector("#input").value;
     document.querySelector("#output").value = input;
   }
+};
+
+const loadDefaults = () => {
+  worker.postMessage(["defaults"]);
 };
 
 langFrom.addEventListener("change", e => {
@@ -98,4 +109,6 @@ function init() {
   langTo.value = langs.find(([code]) => code !== langFrom.value)[0];
   // load this model
   loadModel();
+
+  loadDefaults();
 }
