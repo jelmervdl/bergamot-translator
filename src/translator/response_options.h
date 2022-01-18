@@ -2,6 +2,8 @@
 #define SRC_BERGAMOT_RESPONSE_OPTIONS_H_
 #include <string>
 
+#include "html.h"
+
 namespace marian {
 namespace bergamot {
 
@@ -19,7 +21,8 @@ struct ResponseOptions {
   bool qualityScores{false};  ///< Include quality-scores or not.
   bool alignment{false};      ///< Include alignments or not.
 
-  bool HTML{false};  /// Remove HTML tags from text and (TODO) insert in output.
+  bool HTML{false};           /// Remove HTML tags from text and insert in output.
+  HTML::Options HTMLOptions;  /// Options for controlling HTML processing.
 
   /// Whether to include sentenceMappings or not. Alignments require
   /// sentenceMappings and are available irrespective of this option if

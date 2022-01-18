@@ -74,7 +74,7 @@ class HTML {
   };
 
   explicit HTML(std::string &&source, bool process_markup) : HTML(std::move(source), process_markup, HTML::Options{}){};
-  explicit HTML(std::string &&source, bool process_markup, Options &&options);
+  explicit HTML(std::string &&source, bool process_markup, HTML::Options const &options);
   void restore(Response &response);
 
  private:

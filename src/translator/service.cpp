@@ -44,7 +44,7 @@ std::vector<Response> BlockingService::translateMultiple(std::shared_ptr<Transla
                                                          const ResponseOptions &responseOptions) {
   std::vector<HTML> htmls;
   for (auto &&source : sources) {
-    htmls.emplace_back(std::move(source), responseOptions.HTML);
+    htmls.emplace_back(std::move(source), responseOptions.HTML, responseOptions.HTMLOptions);
   }
   std::vector<Response> responses = translateMultipleRaw(translationModel, std::move(sources), responseOptions);
   for (size_t i = 0; i < responses.size(); i++) {
@@ -149,7 +149,7 @@ AsyncService::~AsyncService() {
 
 void AsyncService::pivot(std::shared_ptr<TranslationModel> first, std::shared_ptr<TranslationModel> second,
                          std::string &&source, CallbackType clientCallback, const ResponseOptions &responseOptions) {
-  Ptr<HTML> html = std::make_shared<HTML>(std::move(source), responseOptions.HTML);
+  Ptr<HTML> html = std::make_shared<HTML>(std::move(source), responseOptions.HTML, responseOptions.HTMLOptions);
   // This is callback chaining or CPS due to async.
 
   // We create a callback which feeds the result of first into a second translation (internalCallback), which is
@@ -189,7 +189,7 @@ void AsyncService::pivot(std::shared_ptr<TranslationModel> first, std::shared_pt
 void AsyncService::translate(std::shared_ptr<TranslationModel> translationModel, std::string &&source,
                              CallbackType callback, const ResponseOptions &responseOptions) {
   // Producer thread, a call to this function adds new work items. If batches are available, notifies workers waiting.
-  Ptr<HTML> html = std::make_shared<HTML>(std::move(source), responseOptions.HTML);
+  Ptr<HTML> html = std::make_shared<HTML>(std::move(source), responseOptions.HTML, responseOptions.HTMLOptions);
   auto internalCallback = [html, callback](Response &&response) {
     html->restore(response);
     callback(std::move(response));

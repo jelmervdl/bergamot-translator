@@ -270,7 +270,7 @@ size_t debugCountTokens(AnnotatedText const &text) {
 
 namespace marian::bergamot {
 
-HTML::HTML(std::string &&source, bool process_markup, Options &&options) : options_(std::move(options)) {
+HTML::HTML(std::string &&source, bool process_markup, Options const &options) : options_(options) {
   if (!process_markup) return;
 
   std::string original = std::move(source);
