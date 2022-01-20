@@ -641,4 +641,13 @@ void HTML::hardAlignments(Response const &response, std::vector<std::vector<size
   }
 }
 
+DefaultFeatureMap::registerFeatureFlag("inlineTags", std::unordered_set<std::string>{
+                                                         "area", "base", "basefont", "bgsound", "br", "col", "embed",
+                                                         "frame", "hr", "img", "input", "keygen", "link", "meta",
+                                                         "param", "source", "track", "wbr"});
+
+DefaultFeatureMap::registerFeatureFlag("continuationDelimiters", "");
+
+DefaultFeatureMap::registerFeatureFlag("substituteInlineTagsWithSpaces", true);
+
 }  // namespace marian::bergamot

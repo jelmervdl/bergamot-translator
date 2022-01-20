@@ -1,6 +1,9 @@
 #ifndef SRC_BERGAMOT_DEFINITIONS_H_
 #define SRC_BERGAMOT_DEFINITIONS_H_
 
+#include <unordered_map>
+#include <unordered_set>
+#include <variant>
 #include <vector>
 
 #include "aligned.h"
@@ -44,6 +47,22 @@ struct ByteRange {
 
 class Response;
 using CallbackType = std::function<void(Response &&)>;
+
+/// Variant encoding the type and (default) value of an experimental feature
+using FeatureValue = std::variant<std::string, bool, std::unordered_set<std::string>>;
+
+/// List of names & (default) values of experimental features
+using FeatureMap = std::unordered_map<std::string, FeatureValue>;
+
+/// FeatureMap that is initialized with all the default values that the template
+/// classes know of. Useful for discovering feature flags, and for checking types.
+struct DefaultFeatureMap {
+  static FeatureMap defaults;
+
+  static void registerFeatureFlag(std::string const &name, FeatureValue const &defaultValue) {
+    defaults.emplace(name, defaultValue);
+  }
+};
 
 }  // namespace bergamot
 }  // namespace marian

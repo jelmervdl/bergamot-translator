@@ -71,12 +71,8 @@ onmessage = async function(e) {
       log(`'${command}' command done, Posting message back to main script`);
       postMessage([`${command}_reply`, result]);
   } else if (command === 'defaults') {
-    const htmlOptions = new Module.HTMLOptions();
-    postMessage([`${command}_reply`, {
-      'voidTags': htmlOptions.voidTags.toString(),
-      'inlineTags': htmlOptions.inlineTags.toString(),
-      'substituteInlineTagsWithSpaces': htmlOptions.substituteInlineTagsWithSpaces
-    }]);
+    const flags = new Module.ResponseOptions().getFeatureFlags();
+    postMessage([`${command}_reply`, flags]);
   }
 }
 
@@ -349,11 +345,7 @@ const _prepareResponseOptions = (htmlOptions) => {
   const options = new Module.ResponseOptions();
   options.qualityScores = true;
   options.html = true;
-  if (htmlOptions) {
-    if ("inlineTags" in htmlOptions) options.htmlOptions.inlineTags = new Module.StringSet(options.inlineTags);
-    if ("voidTags" in htmlOptions) options.htmlOptions.voidTags = new Module.StringSet(options.voidTags);
-    if ("substituteInlineTagsWithSpaces" in htmlOptions) options.htmlOptions.substituteInlineTagsWithSpaces = options.substituteInlineTagsWithSpaces;
-  }
+  if (htmlOptions) Object.entries(htmlOptions).forEach(entry => options.setFeatureFlag(...entry));
   return options;
 }
 
