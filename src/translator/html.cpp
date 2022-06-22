@@ -735,8 +735,22 @@ void HTML::annotateTagStack(Response const &response, std::vector<SpanIterator> 
 // this token as a fresh start. This implementation will treat "hello[world]"
 // as 4 words, assuming its tokenised as something like `h ell o [ wor ld ]`.
 bool HTML::isContinuation(std::string_view prev, std::string_view str) const {
+  // If the list of delimiters is empty, this feature is disabled entirely.
   if (options_.continuationDelimiters.empty()) return false;
+
+  // If either side is an empty string (e.g. end-of-sentence) then don't glue
+  // it to anything.
   if (prev.empty() || str.empty()) return false;
+
+  // Very specific case: Say we have three tokens, `aaa|_|bbb` where the middle
+  // token is whitespace. We want that to stick to either `aaa` or `bbb` because
+  // it is going to align terribly on its own and it breaks up sequences. We
+  // mark it as a continuation so it's treated like `aaa|_bbb`.
+  if (prev.size() == 1 && prev[0] == ' ') return true;
+
+  // If the last character of the previous and the first character of the
+  // current token are not special, like a space or punctuation, then these two
+  // tokens probably form a word together.
   return options_.continuationDelimiters.find(str[0]) == std::string::npos &&
          options_.continuationDelimiters.find(prev.back()) == std::string::npos;
 }
