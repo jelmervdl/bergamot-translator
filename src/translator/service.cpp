@@ -30,18 +30,10 @@ Response combine(Response &&first, Response &&second) {
   return combined;
 }
 
-std::optional<TranslationCache> makeOptionalCache(size_t size, size_t mutexBuckets) {
-  return size > 0 ? std::make_optional<TranslationCache>(size, mutexBuckets) : std::nullopt;
-}
-
 }  // namespace
 
 BlockingService::BlockingService(const BlockingService::Config &config)
-    : config_(config),
-      requestId_(0),
-      batchingPool_(),
-      cache_(makeOptionalCache(config.cacheSize, /*mutexBuckets = */ 1)),
-      logger_(config.logger) {}
+    : config_(config), requestId_(0), batchingPool_(), logger_(config.logger) {}
 
 std::vector<Response> BlockingService::translateMultiple(std::shared_ptr<TranslationModel> translationModel,
                                                          std::vector<std::string> &&sources,
@@ -67,7 +59,7 @@ std::vector<Response> BlockingService::translateMultipleRaw(std::shared_ptr<Tran
   for (size_t i = 0; i < sources.size(); i++) {
     auto callback = [i, &responses](Response &&response) { responses[i] = std::move(response); };  //
     Ptr<Request> request =
-        translationModel->makeRequest(requestId_++, std::move(sources[i]), callback, responseOptions[i], cache_);
+        translationModel->makeRequest(requestId_++, std::move(sources[i]), callback, responseOptions[i]);
     batchingPool_.enqueueRequest(translationModel, request);
   }
 
@@ -105,7 +97,7 @@ std::vector<Response> BlockingService::pivotMultiple(std::shared_ptr<Translation
     auto callback = [i, &pivotsToTargets](Response &&response) { pivotsToTargets[i] = std::move(response); };  //
 
     Ptr<Request> request =
-        second->makePivotRequest(requestId_++, std::move(intermediate), callback, responseOptions[i], cache_);
+        second->makePivotRequest(requestId_++, std::move(intermediate), callback, responseOptions[i]);
     batchingPool_.enqueueRequest(second, request);
   }
 
@@ -130,11 +122,7 @@ std::vector<Response> BlockingService::pivotMultiple(std::shared_ptr<Translation
 }
 
 AsyncService::AsyncService(const AsyncService::Config &config)
-    : requestId_(0),
-      config_(config),
-      safeBatchingPool_(),
-      cache_(makeOptionalCache(config_.cacheSize, /*mutexBuckets=*/config_.numWorkers)),
-      logger_(config.logger) {
+    : requestId_(0), config_(config), safeBatchingPool_(), logger_(config.logger) {
   ABORT_IF(config_.numWorkers == 0, "Number of workers should be at least 1 in a threaded workflow");
   workers_.reserve(config_.numWorkers);
   for (size_t cpuId = 0; cpuId < config_.numWorkers; cpuId++) {
@@ -191,7 +179,7 @@ void AsyncService::pivot(std::shared_ptr<TranslationModel> first, std::shared_pt
 
     // Second call.
     Ptr<Request> request =
-        second->makePivotRequest(requestId_++, std::move(intermediate), joiningCallback, responseOptions, cache_);
+        second->makePivotRequest(requestId_++, std::move(intermediate), joiningCallback, responseOptions);
     safeBatchingPool_.enqueueRequest(second, request);
   };
 
@@ -214,8 +202,7 @@ void AsyncService::translate(std::shared_ptr<TranslationModel> translationModel,
 void AsyncService::translateRaw(std::shared_ptr<TranslationModel> translationModel, std::string &&source,
                                 CallbackType callback, const ResponseOptions &responseOptions) {
   // Producer thread, a call to this function adds new work items. If batches are available, notifies workers waiting.
-  Ptr<Request> request =
-      translationModel->makeRequest(requestId_++, std::move(source), callback, responseOptions, cache_);
+  Ptr<Request> request = translationModel->makeRequest(requestId_++, std::move(source), callback, responseOptions);
   safeBatchingPool_.enqueueRequest(translationModel, request);
 }
 

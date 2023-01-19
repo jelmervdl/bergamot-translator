@@ -7,7 +7,6 @@
 #include "batch.h"
 #include "batching_pool.h"
 #include "byte_array_util.h"
-#include "cache.h"
 #include "common/utils.h"
 #include "data/shortlist.h"
 #include "definitions.h"
@@ -71,10 +70,10 @@ class TranslationModel {
   /// @param [in] responseOptions: Configuration used to prepare the Response corresponding to the created request.
   //  @returns Request created from the query parameters wrapped within a shared-pointer.
   Ptr<Request> makeRequest(size_t requestId, std::string&& source, CallbackType callback,
-                           const ResponseOptions& responseOptions, std::optional<TranslationCache>& cache);
+                           const ResponseOptions& responseOptions);
 
   Ptr<Request> makePivotRequest(size_t requestId, AnnotatedText&& previousTarget, CallbackType callback,
-                                const ResponseOptions& responseOptions, std::optional<TranslationCache>& cache);
+                                const ResponseOptions& responseOptions);
 
   /// Relays a request to the batching-pool specific to this translation model.
   /// @param [in] request: Request constructed through makeRequest

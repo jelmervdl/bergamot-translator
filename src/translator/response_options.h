@@ -13,6 +13,8 @@ enum ConcatStrategy {
   SPACE
 };
 
+class TranslationCache;
+
 /// ResponseOptions dictate how to construct a Response for an input string of
 /// text to be translated.
 struct ResponseOptions {
@@ -20,6 +22,8 @@ struct ResponseOptions {
   bool alignment{false};      ///< Include alignments or not.
 
   bool HTML{false};  /// Remove HTML tags from text and insert in output.
+
+  std::shared_ptr<TranslationCache> cache;
 
   /// Whether to include sentenceMappings or not. Alignments require
   /// sentenceMappings and are available irrespective of this option if

@@ -5,7 +5,6 @@
 #include <thread>
 #include <vector>
 
-#include "cache.h"
 #include "data/types.h"
 #include "logging.h"
 #include "quality_estimator.h"
@@ -30,18 +29,11 @@ class AsyncService;
 class BlockingService {
  public:
   struct Config {
-    /// Size in History items to be stored in the cache. A value of 0 means no caching. Loosely corresponds to sentences
-    /// to cache in the real world. Note that cache has a random-eviction policy. The peak storage at full occupancy is
-    /// controlled by this parameter. However, whether we attain full occupancy or not is controlled by random factors -
-    /// specifically how uniformly the hash distributes.
-    size_t cacheSize{0};
-
     Logger::Config logger;  ///< Configurations for logging
 
     template <class App>
     static void addOptions(App &app, Config &config) {
       // Options will come here.
-      app.add_option("--cache-size", config.cacheSize, "Number of entries to store in cache.");
       Logger::Config::addOptions(app, config.logger);
     }
   };
@@ -80,7 +72,6 @@ class BlockingService {
   std::vector<Response> pivotMultiple(std::shared_ptr<TranslationModel> first, std::shared_ptr<TranslationModel> second,
                                       std::vector<std::string> &&sources,
                                       const std::vector<ResponseOptions> &responseOptions);
-  TranslationCache::Stats cacheStats() { return cache_ ? cache_->stats() : TranslationCache::Stats(); }
 
  private:
   std::vector<Response> translateMultipleRaw(std::shared_ptr<TranslationModel> translationModel,
@@ -99,7 +90,6 @@ class BlockingService {
 
   // Logger which shuts down cleanly with service.
   Logger logger_;
-  std::optional<TranslationCache> cache_;
 };
 
 /// Effectively a threadpool, providing an API to take a translation request of a source-text, paramaterized by
@@ -116,7 +106,6 @@ class AsyncService {
     template <class App>
     static void addOptions(App &app, Config &config) {
       app.add_option("--cpu-threads", config.numWorkers, "Workers to form translation backend");
-      app.add_option("--cache-size", config.cacheSize, "Number of entries to store in cache.");
       Logger::Config::addOptions(app, config.logger);
     }
   };
@@ -165,8 +154,6 @@ class AsyncService {
   /// If you do not want to wait, call `clear()` before destructor.
   ~AsyncService();
 
-  TranslationCache::Stats cacheStats() { return cache_ ? cache_->stats() : TranslationCache::Stats(); }
-
  private:
   void translateRaw(std::shared_ptr<TranslationModel> translationModel, std::string &&source, CallbackType callback,
                     const ResponseOptions &options = ResponseOptions());
@@ -189,7 +176,6 @@ class AsyncService {
 
   // Logger which shuts down cleanly with service.
   Logger logger_;
-  std::optional<TranslationCache> cache_;
 };
 
 }  // namespace bergamot

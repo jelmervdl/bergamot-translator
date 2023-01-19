@@ -90,8 +90,7 @@ void TranslationModel::loadBackend(size_t idx) {
 
 // Make request process is shared between Async and Blocking workflow of translating.
 Ptr<Request> TranslationModel::makeRequest(size_t requestId, std::string &&source, CallbackType callback,
-                                           const ResponseOptions &responseOptions,
-                                           std::optional<TranslationCache> &cache) {
+                                           const ResponseOptions &responseOptions) {
   Segments segments;
   AnnotatedText annotatedSource;
 
@@ -99,19 +98,19 @@ Ptr<Request> TranslationModel::makeRequest(size_t requestId, std::string &&sourc
   ResponseBuilder responseBuilder(responseOptions, std::move(annotatedSource), vocabs_, callback, *qualityEstimator_);
 
   Ptr<Request> request =
-      New<Request>(requestId, /*model=*/*this, std::move(segments), std::move(responseBuilder), cache);
+      New<Request>(requestId, /*model=*/*this, std::move(segments), std::move(responseBuilder), responseOptions.cache);
   return request;
 }
 
 Ptr<Request> TranslationModel::makePivotRequest(size_t requestId, AnnotatedText &&previousTarget, CallbackType callback,
-                                                const ResponseOptions &responseOptions,
-                                                std::optional<TranslationCache> &cache) {
+                                                const ResponseOptions &responseOptions) {
   Segments segments;
 
   textProcessor_.processFromAnnotation(previousTarget, segments);
   ResponseBuilder responseBuilder(responseOptions, std::move(previousTarget), vocabs_, callback, *qualityEstimator_);
 
-  Ptr<Request> request = New<Request>(requestId, *this, std::move(segments), std::move(responseBuilder), cache);
+  Ptr<Request> request =
+      New<Request>(requestId, *this, std::move(segments), std::move(responseBuilder), responseOptions.cache);
   return request;
 }
 

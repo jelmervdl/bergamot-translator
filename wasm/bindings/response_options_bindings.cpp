@@ -16,6 +16,7 @@ EMSCRIPTEN_BINDINGS(response_options) {
   value_object<ResponseOptions>("ResponseOptions")
       .field("qualityScores", &ResponseOptions::qualityScores)
       .field("alignment", &ResponseOptions::alignment)
-      .field("html", &ResponseOptions::HTML);
+      .field("html", &ResponseOptions::HTML)
+      .field("cache", &ResponseOptions::cache);
   register_vector<ResponseOptions>("VectorResponseOptions");
 }

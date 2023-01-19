@@ -4,6 +4,9 @@
 
 #include <emscripten/bind.h>
 
+#include <future>
+#include <memory>
+
 #include "service.h"
 
 using namespace emscripten;
@@ -12,6 +15,7 @@ using BlockingService = marian::bergamot::BlockingService;
 using TranslationModel = marian::bergamot::TranslationModel;
 using AlignedMemory = marian::bergamot::AlignedMemory;
 using MemoryBundle = marian::bergamot::MemoryBundle;
+using TranslationCache = marian::bergamot::TranslationCache;
 
 val getByteArrayView(AlignedMemory& alignedMemory) {
   return val(typed_memory_view(alignedMemory.size(), alignedMemory.as<char>()));
@@ -72,15 +76,18 @@ EMSCRIPTEN_BINDINGS(translation_model) {
       .smart_ptr_constructor("TranslationModel", &TranslationModelFactory, allow_raw_pointers());
 }
 
-EMSCRIPTEN_BINDINGS(blocking_service_config) {
-  value_object<BlockingService::Config>("BlockingServiceConfig")
-      .field("cacheSize", &BlockingService::Config::cacheSize);
+std::shared_ptr<TranslationCache> TranslationCacheFactory(size_t size, size_t buckets) {
+  return std::make_shared<TranslationCache>(size, buckets);
 }
 
-std::shared_ptr<BlockingService> BlockingServiceFactory(const BlockingService::Config& config) {
-  auto copy = config;
-  copy.logger.level = "critical";
-  return std::make_shared<BlockingService>(copy);
+EMSCRIPTEN_BINDINGS(translation_cache) {
+  class_<TranslationCache>("TranslationCache").smart_ptr_constructor("TranslationCache", &TranslationCacheFactory);
+}
+
+std::shared_ptr<BlockingService> BlockingServiceFactory() {
+  BlockingService::Config config;
+  config.logger.level = "critical";
+  return std::make_shared<BlockingService>(config);
 }
 
 EMSCRIPTEN_BINDINGS(blocking_service) {
